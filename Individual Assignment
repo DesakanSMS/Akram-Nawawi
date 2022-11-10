@@ -1,0 +1,80 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <signal.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+
+#define ID_LENGTH 10
+#define ID_WAIT_INTERVAL 2
+
+void sigint_handler(int sig)
+{
+        printf("Fill Your Correct Name!!\n");
+}
+
+void idNum(char num[ID_LENGTH+1])
+{
+        srand(getpid()+getppid());
+
+        num[0]=50+rand()%7;
+
+        for(int n=1;n<ID_LENGTH;n++)
+        {
+                num[n]=49+rand()%7;
+        }
+        num[ID_LENGTH]='\0';
+}
+
+int main(void)
+{
+        while(1)
+        {
+                void sigint_handler(int sig);
+
+                if(signal(SIGINT,sigint_handler)==SIG_ERR)
+                {
+                        perror("fork");
+                        exit(1);
+                }
+
+                int pp[2];
+                char num[ID_LENGTH+1];
+                char buffer[ID_LENGTH+1];
+                char s[200];
+
+                pipe(pp);
+                pid_t pid=fork();
+
+                if(pid==0)
+                {
+                        idNum(num);
+                        close(pp[0]);
+                        write(pp[1],num,ID_LENGTH+1);
+
+                        printf("Enter Your Name:\n");
+                        fgets(s,200,stdin);
+                        printf("Welcome%s\n\n",s);
+
+                        sleep(ID_WAIT_INTERVAL);
+
+                        exit(EXIT_SUCCESS);
+                }
+
+
+                if(pid>0)
+                {
+                        wait(NULL);
+
+                        close(pp[1]);
+                        read(pp[0],buffer,ID_LENGTH+1);
+                        close(pp[0]);
+
+                        printf("Here Your ID Number:%s\n\n",buffer);
+                }
+        }
+        return EXIT_SUCCESS;
+        
+}
